@@ -47,6 +47,25 @@ jobs:
       - name: Install frontend deps
         run: pnpm install --frozen-lockfile
 
+      - name: Disable updater signing
+        run: |
+          node -e "
+            const fs = require('fs');
+            const path = 'src-tauri/tauri.conf.json';
+            const conf = JSON.parse(fs.readFileSync(path, 'utf8'));
+            // 关闭 updater 插件
+            if (conf.plugins && conf.plugins.updater) {
+              conf.plugins.updater.active = false;
+              delete conf.plugins.updater.pubkey;
+            }
+            // 关闭 updater artifacts 生成
+            if (conf.bundle) {
+              conf.bundle.createUpdaterArtifacts = false;
+            }
+            fs.writeFileSync(path, JSON.stringify(conf, null, 2) + '\n');
+            console.log('Updater & signing disabled');
+          "
+
       - name: Build Tauri App
         timeout-minutes: 60
         run: pnpm tauri build --target universal-apple-darwin
